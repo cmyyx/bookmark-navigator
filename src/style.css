@@ -241,7 +241,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    justify-content: center;
+    /* justify-content: center; */ /* Replaced by margin-top: auto on path */
     gap: 0.8rem;
     padding: 1rem;
     background-color: rgba(0, 0, 0, 0.2);
@@ -250,7 +250,7 @@ body {
     color: var(--text-color);
     transition: all var(--transition-speed) ease-in-out;
     backdrop-filter: blur(5px);
-    height: 120px; /* 固定高度 */
+    min-height: 120px; /* Use min-height to allow expansion */
     position: relative;
 }
 
@@ -271,4 +271,14 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.bookmark-path {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: auto; /* Pushes the path to the bottom */
+    padding-top: 0.5rem; /* Add some space above the path */
 }

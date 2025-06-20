@@ -58,11 +58,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const flattenBookmarks = (nodes) => {
+    const flattenBookmarks = (nodes, path = []) => {
         let bookmarks = [];
         for (const node of nodes) {
-            if (node.bookmarks) bookmarks = bookmarks.concat(node.bookmarks);
-            if (node.children) bookmarks = bookmarks.concat(flattenBookmarks(node.children));
+            const currentPath = [...path, node.name];
+            if (node.bookmarks) {
+                node.bookmarks.forEach(b => {
+                    // 从 build.js 传递过来的原始路径优先级更高
+                    if (!b.path) {
+                        b.path = path.join(' / ');
+                    }
+                });
+                bookmarks = bookmarks.concat(node.bookmarks);
+            }
+            if (node.children) {
+                bookmarks = bookmarks.concat(flattenBookmarks(node.children, currentPath));
+            }
         }
         return bookmarks;
     };
@@ -124,6 +135,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             item.appendChild(icon);
             item.appendChild(name);
+
+            if (bookmark.path) {
+                const pathElement = document.createElement('small');
+                pathElement.classList.add('bookmark-path');
+                pathElement.textContent = bookmark.path;
+                pathElement.title = bookmark.path;
+                item.appendChild(pathElement);
+            }
+
             bookmarkGrid.appendChild(item);
         });
     };

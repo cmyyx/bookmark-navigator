@@ -63,8 +63,9 @@ async function copyStaticAssets() {
 
 
 function parseBookmarksWithRegex(htmlContent) {
-    const results = { bookmarks: [], children: [] };
-    const stack = [results];
+    const results = { name: 'root', bookmarks: [], children: [] };
+    // The stack now holds objects with the node and its path
+    const stack = [{ node: results, path: '' }];
 
     const lines = htmlContent.split('\n');
 
@@ -74,10 +75,15 @@ function parseBookmarksWithRegex(htmlContent) {
         // Check for folder start
         const folderMatch = trimmedLine.match(/<H3.*>(.*)<\/H3>/i);
         if (folderMatch) {
-            const folderName = folderMatch[1];
+            const folderName = folderMatch[1].trim();
+            const currentStackItem = stack[stack.length - 1];
+            const parentPath = currentStackItem.path;
+
+            const newPath = parentPath ? `${parentPath} / ${folderName}` : folderName;
             const newFolder = { name: folderName, bookmarks: [], children: [] };
-            stack[stack.length - 1].children.push(newFolder);
-            stack.push(newFolder);
+            
+            currentStackItem.node.children.push(newFolder);
+            stack.push({ node: newFolder, path: newPath });
             continue;
         }
 
@@ -86,7 +92,9 @@ function parseBookmarksWithRegex(htmlContent) {
         if (bookmarkMatch) {
             const url = bookmarkMatch[1];
             const name = bookmarkMatch[2];
-            stack[stack.length - 1].bookmarks.push({ name, url, icon: '' });
+            const currentStackItem = stack[stack.length - 1];
+            
+            currentStackItem.node.bookmarks.push({ name, url, icon: '', path: currentStackItem.path });
             continue;
         }
 
