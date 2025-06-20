@@ -1,7 +1,7 @@
 {
   "buildSettings": {
     "_comment": "高级构建设置。警告：修改这些值可能会导致构建失败或性能问题。如果不了解，请保持默认值。",
-    "concurrentRequests": 20,
+    "concurrentRequests": 50,
     "maxIconSizeBytes": 5242880,
     "allowedIconContentTypes": [
       "image/x-icon",
@@ -44,11 +44,11 @@
     "bilibili": {
       "name": "哔哩哔哩",
       "url": "https://search.bilibili.com/all?keyword={query}",
-      "icon": "",
+      "icon": "https://www.bilibili.com/favicon.ico",
       "engines": {
         "bv": {
           "name": "AV/BV号搜索",
-          "url": "https://www.npmjs.com/search?q={query}",
+          "url": "https://www.bilibili.com/video/{query}",
           "icon": ""
         },
         "cv": {
