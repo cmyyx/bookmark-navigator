@@ -150,7 +150,7 @@ body {
     transform-origin: top center;
     transition: transform var(--transition-speed) ease-in-out, opacity var(--transition-speed) ease-in-out, visibility 0s var(--transition-speed);
     backdrop-filter: blur(10px);
-    min-width: 120px;
+    width: 220px; /* 为下拉框设置一个固定的宽度 */
 }
 
 .engine-option:hover .dropdown {
@@ -164,10 +164,12 @@ body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.6rem 1rem;
+    padding: 0.8rem 1rem; /* 增加内边距以适应多行文本 */
     color: var(--dark-text-color);
     border-radius: 6px;
     text-align: left;
+    white-space: normal; /* 允许文字换行 */
+    line-height: 1.4; /* 调整行高 */
 }
 
 .dropdown-item img {
