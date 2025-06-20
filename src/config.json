@@ -22,7 +22,14 @@
     "google": {
       "name": "Google",
       "url": "https://www.google.com/search?q={query}",
-      "icon": ""
+      "icon": "",
+      "engines": {
+        "luxirty": {
+          "name": "Luxirty",
+          "url": "http://search.luxirty.com/search?q={query}",
+          "icon": ""
+        }
+      }
     },
     "bing": {
       "name": "Bing",
@@ -34,22 +41,54 @@
       "url": "https://github.com/search?q={query}",
       "icon": ""
     },
-    "aggregate": {
-      "name": "聚合",
-      "url": "https://www.google.com/search?q={query}",
+    "bilibili": {
+      "name": "哔哩哔哩",
+      "url": "https://search.bilibili.com/all?keyword={query}",
       "icon": "",
       "engines": {
-        "npmjs": {
-          "name": "NPM",
+        "bv": {
+          "name": "AV/BV号搜索",
           "url": "https://www.npmjs.com/search?q={query}",
           "icon": ""
         },
-        "bilibili": {
-          "name": "Bilibili",
-          "url": "https://search.bilibili.com/all?keyword={query}",
-          "icon": "https://www.bilibili.com/favicon.ico"
+        "cv": {
+          "name": "CV号搜索(旧版文章界面)",
+          "url": "https://www.bilibili.com/read/{query}",
+          "icon": ""
+        },
+        "opus": {
+          "name": "文章号搜索(新版文章界面)",
+          "url": "https://www.bilibili.com/opus/{query}",
+          "icon": ""
         }
       }
+    },
+    "duckduckgo": {
+      "name": "DuckDuckgo",
+      "url": "https://duckduckgo.com/?q={query}",
+      "icon": ""
+    },
+    "yandex": {
+      "name": "Yandex",
+      "url": "https://yandex.com/search/?text={query}",
+      "icon": ""
+    },
+    "pixiv": {
+      "name": "Pixiv",
+      "url": "https://www.pixiv.net/tags/{query}/artworks",
+      "icon": "",
+      "engines": {
+        "number": {
+          "name": "Pixiv数字",
+          "url": "https://www.pixiv.net/artworks/{query}",
+          "icon": ""
+        }
+      }
+    },
+    "youtube": {
+      "name": "YouTube",
+      "url": "https://www.youtube.com/results?search_query={query}",
+      "icon": ""
     }
   }
 }
