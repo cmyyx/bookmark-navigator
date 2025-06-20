@@ -1,0 +1,55 @@
+{
+  "buildSettings": {
+    "_comment": "高级构建设置。警告：修改这些值可能会导致构建失败或性能问题。如果不了解，请保持默认值。",
+    "concurrentRequests": 20,
+    "maxIconSizeBytes": 5242880,
+    "allowedIconContentTypes": [
+      "image/x-icon",
+      "image/vnd.microsoft.icon",
+      "image/png",
+      "image/jpeg",
+      "image/svg+xml",
+      "image/gif",
+      "image/webp"
+    ]
+  },
+  "searchEngines": {
+    "bookmark": {
+      "name": "书签",
+      "url": null,
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLWJvb2ttYXJrIj48cGF0aCBkPSJtMTkgMjEtNy01LTcgNVY1YTIgMiAwIDAgMSAyLTJoMTBhMiAyIDAgMCAxIDIgMnoiLz48L3N2Zz4="
+    },
+    "google": {
+      "name": "Google",
+      "url": "https://www.google.com/search?q={query}",
+      "icon": ""
+    },
+    "bing": {
+      "name": "Bing",
+      "url": "https://www.bing.com/search?q={query}",
+      "icon": ""
+    },
+    "github": {
+      "name": "GitHub",
+      "url": "https://github.com/search?q={query}",
+      "icon": ""
+    },
+    "aggregate": {
+      "name": "聚合",
+      "url": "https://www.google.com/search?q={query}",
+      "icon": "",
+      "engines": {
+        "npmjs": {
+          "name": "NPM",
+          "url": "https://www.npmjs.com/search?q={query}",
+          "icon": ""
+        },
+        "bilibili": {
+          "name": "Bilibili",
+          "url": "https://search.bilibili.com/all?keyword={query}",
+          "icon": "https://www.bilibili.com/favicon.ico"
+        }
+      }
+    }
+  }
+}

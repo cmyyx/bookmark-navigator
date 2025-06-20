@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的导航</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="background-overlay"></div>
+    <main class="container">
+        <section class="search-section">
+            <div class="search-bar-wrapper">
+                <input type="text" id="search-input" placeholder="探索，从这里开始...">
+                <div class="engine-selector">
+                    <!-- 搜索引擎选项将由JS动态生成 -->
+                </div>
+            </div>
+        </section>
+        <section class="content-section">
+            <aside id="folder-tree" class="folder-tree"></aside>
+            <article id="bookmark-grid" class="bookmark-grid"></article>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>

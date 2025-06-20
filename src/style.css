@@ -1,0 +1,269 @@
+/* --- 字体定义 --- */
+@font-face {
+    font-family: 'MapleMono';
+    src: url('assets/MapleMono-Medium.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+}
+
+/* --- 全局样式与重置 --- */
+:root {
+    --transition-speed: 0.25s;
+    --highlight-color: rgba(255, 255, 255, 0.2);
+    --border-color: rgba(255, 255, 255, 0.5);
+    --text-color: #f0f0f0;
+    --dark-text-color: #2c3e50;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'MapleMono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-color);
+    background-image: url('assets/background.webp');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    overflow-y: scroll;
+}
+
+.background-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: -1;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* --- 搜索区域 --- */
+.search-section {
+    position: relative;
+    z-index: 100;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.search-bar-wrapper {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+#search-input {
+    width: 50vw;
+    max-width: 600px;
+    padding: 0.8rem 1.5rem;
+    font-size: 1.2rem;
+    font-family: inherit;
+    color: var(--text-color);
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 2px solid var(--border-color);
+    border-radius: 30px;
+    outline: none;
+    transition: all var(--transition-speed) ease-in-out;
+    backdrop-filter: blur(5px);
+}
+
+#search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+#search-input:focus {
+    border-color: white;
+    background-color: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+}
+
+.engine-selector {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 0.4rem;
+    border-radius: 999px;
+    backdrop-filter: blur(5px);
+}
+
+.engine-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background-color: transparent;
+    color: var(--border-color);
+    border: none;
+    transition: all var(--transition-speed) ease-in-out;
+    position: relative;
+}
+
+.engine-option img {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.engine-option:hover:not(.active) {
+    filter: brightness(1.2);
+    transform: scale(1.05);
+}
+
+.engine-option.active {
+    background-color: white;
+    color: var(--dark-text-color);
+    transform: scale(1.05);
+}
+
+.engine-option.parent-active {
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+}
+
+.engine-option .dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) scaleY(0.95);
+    opacity: 0;
+    visibility: hidden;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 10px;
+    padding: 0.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    transform-origin: top center;
+    transition: transform var(--transition-speed) ease-in-out, opacity var(--transition-speed) ease-in-out, visibility 0s var(--transition-speed);
+    backdrop-filter: blur(10px);
+    min-width: 120px;
+}
+
+.engine-option:hover .dropdown {
+    transform: translateX(-50%) scaleY(1);
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s, 0s, 0s;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    color: var(--dark-text-color);
+    border-radius: 6px;
+    text-align: left;
+}
+
+.dropdown-item img {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+}
+
+.dropdown-item:hover {
+    background-color: var(--highlight-color);
+}
+
+.dropdown-item.active {
+    background-color: var(--highlight-color);
+    font-weight: bold;
+}
+
+/* --- 内容区域 --- */
+.content-section {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.folder-tree {
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 1rem;
+    border-radius: 12px;
+    backdrop-filter: blur(5px);
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.folder-tree ul {
+    list-style: none;
+    padding-left: 1rem;
+}
+
+.folder-item {
+    padding: 0.6rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color var(--transition-speed) ease-in-out;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folder-item:hover {
+    background-color: var(--highlight-color);
+}
+
+.folder-item.active {
+    background-color: var(--highlight-color);
+    font-weight: bold;
+}
+
+.bookmark-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.bookmark-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.8rem;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all var(--transition-speed) ease-in-out;
+    backdrop-filter: blur(5px);
+    height: 120px; /* 固定高度 */
+    position: relative;
+}
+
+.bookmark-item:hover {
+    background-color: rgba(0, 0, 0, 0.4);
+    transform: translateY(-4px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.bookmark-item img {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.bookmark-item span {
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
