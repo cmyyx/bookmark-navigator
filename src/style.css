@@ -150,26 +150,29 @@ body {
     transform-origin: top center;
     transition: transform var(--transition-speed) ease-in-out, opacity var(--transition-speed) ease-in-out, visibility 0s var(--transition-speed);
     backdrop-filter: blur(10px);
-    width: 220px; /* 为下拉框设置一个固定的宽度 */
+    min-width: 220px; /* 设置一个合适的最小宽度 */
+    max-width: 350px; /* 设置一个最大宽度，防止无限延伸 */
 }
 
 .engine-option:hover .dropdown {
     transform: translateX(-50%) scaleY(1);
     opacity: 1;
     visibility: visible;
-    transition-delay: 0s, 0s, 0s;
+    /* 为 opacity 和 visibility 添加 150ms 的延迟，防止鼠标快速划过时闪现 */
+    transition-delay: 0s, 150ms, 150ms;
 }
 
 .dropdown-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.8rem 1rem; /* 增加内边距以适应多行文本 */
+    padding: 0.7rem 1rem;
     color: var(--dark-text-color);
     border-radius: 6px;
     text-align: left;
-    white-space: normal; /* 允许文字换行 */
-    line-height: 1.4; /* 调整行高 */
+    white-space: normal; /* 允许文字在达到max-width后换行 */
+    line-height: 1.4;
+    overflow-wrap: break-word; /* 处理超长单词或链接 */
 }
 
 .dropdown-item img {
