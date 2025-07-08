@@ -26,20 +26,17 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// 正确的“缓存优先”策略
 self.addEventListener('fetch', (event) => {
-  if (event.request.mode !== 'navigate') {
-    // Not a page navigation, bail.
-    return;
-  }
   event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      try {
-        const response = await cache.match(event.request);
-        return response || fetch(event.request);
-      } catch (error) {
-        console.log('Fetch failed; returning offline page instead.', error);
-        // Fallback or error handling can be added here
+    caches.match(event.request).then((response) => {
+      // 如果在缓存中找到了匹配的响应，则直接返回它。
+      if (response) {
+        return response;
       }
+      // 如果缓存中没有，则通过网络去获取。
+      // （这主要用于处理一些意外情况，因为我们已经预缓存了所有文件）
+      return fetch(event.request);
     })
   );
 });

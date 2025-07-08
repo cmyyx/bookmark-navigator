@@ -282,3 +282,27 @@ body {
     margin-top: auto; /* Pushes the path to the bottom */
     padding-top: 0.5rem; /* Add some space above the path */
 }
+
+/* 离线提示横幅 */
+#offline-indicator {
+  background-color: #ffcc00;
+  color: #333;
+  text-align: center;
+  padding: 10px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  font-weight: bold;
+}
+
+#offline-indicator.hidden {
+  display: none;
+}
+
+/* 离线状态下的占位符图标 */
+.bookmark-item img.is-placeholder-offline {
+  opacity: 0.4;
+  filter: grayscale(80%);
+}
