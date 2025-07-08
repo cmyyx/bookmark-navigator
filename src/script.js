@@ -267,20 +267,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // --- Offline Mode Logic ---
-const offlineIndicator = document.getElementById('offline-indicator');
 const placeholderSrc = 'assets/placeholder_icon.svg';
 
 function updateOnlineStatus() {
+  const toastNotification = document.getElementById('toast-notification');
   const isOnline = navigator.onLine;
   
   if (isOnline) {
-    offlineIndicator.classList.add('hidden');
+    toastNotification.classList.remove('show');
     // 移除所有占位符的特殊样式
     document.querySelectorAll(`img.is-placeholder-offline`).forEach(img => {
       img.classList.remove('is-placeholder-offline');
     });
   } else {
-    offlineIndicator.classList.remove('hidden');
+    toastNotification.classList.remove('hidden'); // Make it visible for animation
+    toastNotification.classList.add('show');
     // 为所有占位符图标添加特殊样式
     document.querySelectorAll(`img[src$="${placeholderSrc}"]`).forEach(img => {
       img.classList.add('is-placeholder-offline');

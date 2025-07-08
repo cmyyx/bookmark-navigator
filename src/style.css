@@ -283,22 +283,45 @@ body {
     padding-top: 0.5rem; /* Add some space above the path */
 }
 
-/* 离线提示横幅 */
-#offline-indicator {
-  background-color: #ffcc00;
-  color: #333;
-  text-align: center;
-  padding: 10px;
+/* Toast Notification */
+.toast {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background-color: #323232;
+  color: #f1f1f1;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1000;
-  font-weight: bold;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  opacity: 0;
 }
 
-#offline-indicator.hidden {
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast.hidden {
   display: none;
+}
+
+.toast-icon {
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+}
+
+.toast-icon svg {
+  fill: #ffcc00;
+}
+
+.toast-message {
+  font-size: 14px;
 }
 
 /* 离线状态下的占位符图标 */
