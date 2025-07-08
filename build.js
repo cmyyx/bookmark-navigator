@@ -352,10 +352,14 @@ async function build() {
         const allFilesToCache = [...baseFiles, ...iconFiles];
 
         let swContent = await fs.readFile(path.join(SRC_DIR, 'sw.js'), 'utf-8');
-        swContent = swContent.replace(
-            'const FILES_TO_CACHE = []; // __REPLACE_ME__',
-            `const FILES_TO_CACHE = ${JSON.stringify(allFilesToCache, null, 2)};`
-        );
+        const cacheVersion = `bookmarks-cache-v${Date.now()}`;
+
+        swContent = swContent
+            .replace(`'bookmarks-cache-v1'`, `'${cacheVersion}'`)
+            .replace(
+                'const FILES_TO_CACHE = []; // __REPLACE_ME__',
+                `const FILES_TO_CACHE = ${JSON.stringify(allFilesToCache, null, 2)};`
+            );
 
         await fs.writeFile(path.join(DIST_DIR, 'sw.js'), swContent);
         await logDebug('Service Worker configured with all files.');

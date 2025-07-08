@@ -13,11 +13,13 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
+  const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
-        if (key !== CACHE_NAME) {
-          console.log('[Service Worker] Removing old cache', key);
+        // 如果缓存名不在白名单中，则删除它
+        if (cacheWhitelist.indexOf(key) === -1) {
+          console.log('[Service Worker] Deleting old cache:', key);
           return caches.delete(key);
         }
       }));

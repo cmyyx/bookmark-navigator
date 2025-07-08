@@ -275,13 +275,24 @@ function updateOnlineStatus() {
   
   if (isOnline) {
     toastNotification.classList.remove('show');
+    // 等待动画结束（0.5s）后，再添加 hidden 类，以便 display: none
+    setTimeout(() => {
+      if (navigator.onLine) { // 再次检查，确保在延迟期间状态没有再次变为离线
+        toastNotification.classList.add('hidden');
+      }
+    }, 500);
+
     // 移除所有占位符的特殊样式
     document.querySelectorAll(`img.is-placeholder-offline`).forEach(img => {
       img.classList.remove('is-placeholder-offline');
     });
   } else {
-    toastNotification.classList.remove('hidden'); // Make it visible for animation
-    toastNotification.classList.add('show');
+    toastNotification.classList.remove('hidden'); // 移除 display: none
+    // 使用一个微小的延迟来确保浏览器渲染了 display 的变化，从而使动画能够触发
+    setTimeout(() => {
+        toastNotification.classList.add('show');
+    }, 10);
+
     // 为所有占位符图标添加特殊样式
     document.querySelectorAll(`img[src$="${placeholderSrc}"]`).forEach(img => {
       img.classList.add('is-placeholder-offline');
