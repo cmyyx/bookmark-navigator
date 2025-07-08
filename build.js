@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const mime = require('mime-types');
+const crypto = require('crypto');
 
 // --- 配置 ---
 const SRC_DIR = path.join(__dirname, 'src');
@@ -18,8 +19,8 @@ let CONCURRENT_REQUESTS;
 let MAX_ICON_SIZE_BYTES;
 let ALLOWED_ICON_CONTENT_TYPES;
 
-const processedHostnames = new Set();
-const processingHostnames = new Set(); // 新增，用于处理并发请求
+const iconCache = new Map(); // 缓存最终的图标路径
+const fetchingPromises = new Map(); // 缓存正在进行中的 fetch Promise
 
 // --- 核心函数 ---
 
@@ -140,139 +141,179 @@ async function getFavicon(url) {
 
     const rootHostname = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
 
-    // --- 并发锁定和等待 ---
-    while (processingHostnames.has(rootHostname)) {
-        await logDebug(`... Waiting for another process for ${rootHostname}`);
-        await new Promise(resolve => setTimeout(resolve, 250));
+    // 1. 检查最终结果缓存
+    if (iconCache.has(rootHostname)) {
+        return iconCache.get(rootHostname);
     }
 
-    // --- 文件存在性检查 (主要) ---
-    try {
-        const files = await fs.readdir(ICONS_DIR);
-        const existingIcon = files.find(file => file.startsWith(`${rootHostname}.`));
-        if (existingIcon) {
-            // 如果文件已存在，我们就不需要再次获取。
-            // 只有在第一次遇到这个已存在的文件时才打印日志。
-            if (!processedHostnames.has(rootHostname)) {
-                await logDebug(`Icon for ${rootHostname} already exists as ${existingIcon}. Skipping.`);
-                processedHostnames.add(rootHostname);
-            }
-            return `icons/${existingIcon}`;
-        }
-    } catch (e) {
-        // 忽略目录不存在的错误
+    // 2. 检查是否有正在进行的Promise
+    if (fetchingPromises.has(rootHostname)) {
+        
+        return await fetchingPromises.get(rootHostname);
     }
 
-    // 锁定主机，开始获取
-    processingHostnames.add(rootHostname);
+    // 3. 如果都没有，则创建新的Promise来处理抓取
+    const fetchPromise = (async () => {
+        try {
+            const fallbackUrls = [
+                `https://${hostname}/favicon.ico`,
+                `https://www.google.com/s2/favicons?sz=64&domain_url=${hostname}`,
+                `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+                `https://favicon.im/${hostname}`,
+                `https://favicon.yandex.net/favicon/${hostname}`,
+                `https://logo.clearbit.com/${hostname}`,
+            ];
 
-    try {
-        const fallbackUrls = [
-            `https://${hostname}/favicon.ico`,
-            `https://www.google.com/s2/favicons?sz=64&domain_url=${hostname}`,
-            `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
-            `https://favicon.im/${hostname}`,
-            `https://favicon.yandex.net/favicon/${hostname}`,
-            `https://logo.clearbit.com/${hostname}`,
-        ];
+            for (const fallbackUrl of fallbackUrls) {
+                try {
+                    const response = await axios.get(fallbackUrl, {
+                        responseType: 'arraybuffer',
+                        timeout: 8000,
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
+                    });
 
-        for (const fallbackUrl of fallbackUrls) {
-            try {
-                const response = await axios.get(fallbackUrl, {
-                    responseType: 'arraybuffer',
-                    timeout: 8000,
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36' }
-                });
+                    if (response.status === 200 && response.data.length > 0) {
+                        const contentType = response.headers['content-type'];
+                        const contentLength = response.headers['content-length'];
 
-                if (response.status === 200 && response.data.length > 0) {
-                    const contentType = response.headers['content-type'];
-                    const contentLength = response.headers['content-length'];
+                        if (response.data.length > MAX_ICON_SIZE_BYTES) {
+                            await logDebug(`Skipping ${fallbackUrl} for ${hostname}: File size (${response.data.length} bytes) exceeds limit.`);
+                            continue;
+                        }
+                        if (contentLength && parseInt(contentLength, 10) > MAX_ICON_SIZE_BYTES) {
+                            await logDebug(`Skipping ${fallbackUrl} for ${hostname}: Header size (${contentLength}) exceeds limit.`);
+                            continue;
+                        }
+                        if (!contentType || !ALLOWED_ICON_CONTENT_TYPES.some(type => contentType.includes(type))) {
+                            await logDebug(`Skipping ${fallbackUrl} for ${hostname}: Invalid content type: ${contentType}`);
+                            continue;
+                        }
+                        if (isPlaceholder(response.data, fallbackUrl, hostname, contentType)) {
+                            await logDebug(`Skipping ${fallbackUrl} for ${hostname}: Detected placeholder image.`);
+                            continue;
+                        }
 
-                    if (response.data.length > MAX_ICON_SIZE_BYTES) {
-                        await logDebug(`Skipping ${fallbackUrl} for ${hostname}: File size (${response.data.length} bytes) exceeds limit.`);
-                        continue;
-                    }
-                    if (contentLength && parseInt(contentLength, 10) > MAX_ICON_SIZE_BYTES) {
-                        await logDebug(`Skipping ${fallbackUrl} for ${hostname}: Header size (${contentLength}) exceeds limit.`);
-                        continue;
-                    }
-                    if (!contentType || !ALLOWED_ICON_CONTENT_TYPES.some(type => contentType.includes(type))) {
-                        await logDebug(`Skipping ${fallbackUrl} for ${hostname}: Invalid content type: ${contentType}`);
-                        continue;
-                    }
-                    if (isPlaceholder(response.data, fallbackUrl, hostname, contentType)) {
-                        await logDebug(`Skipping ${fallbackUrl} for ${hostname}: Detected placeholder image.`);
-                        continue;
-                    }
+                        let extension = mime.extension(contentType);
+                        if (!extension || extension === 'bin') {
+                            const urlPath = new URL(fallbackUrl).pathname;
+                            const urlExt = path.extname(urlPath).substring(1);
+                            extension = urlExt || 'png';
+                        }
+                        
+                        const hash = crypto.createHash('md5').update(response.data).digest('hex').substring(0, 8);
+                        const iconFilename = `${rootHostname}.${hash}.${extension}`;
+                        const iconPath = path.join(ICONS_DIR, iconFilename);
+                        const relativeIconPath = `icons/${iconFilename}`;
 
-                    let extension = mime.extension(contentType);
-                    if (!extension || extension === 'bin') {
-                        const urlPath = new URL(fallbackUrl).pathname;
-                        const urlExt = path.extname(urlPath).substring(1);
-                        extension = urlExt || 'png';
+                        await fs.writeFile(iconPath, response.data);
+                        await logDebug(`✅ Fetched and saved ${iconFilename} from ${fallbackUrl}`);
+                        
+                        iconCache.set(rootHostname, relativeIconPath); // 缓存最终结果
+                        return relativeIconPath;
                     }
-                    
-                    const iconFilename = `${rootHostname}.${extension}`;
-                    const iconPath = path.join(ICONS_DIR, iconFilename);
-                    
-                    await fs.writeFile(iconPath, response.data);
-                    await logDebug(`✅ Fetched and saved ${iconFilename} from ${fallbackUrl}`);
-                    return `icons/${iconFilename}`;
+                } catch (error) {
+                    let errorMessage = error.message;
+                    if (error.response) errorMessage += ` (status: ${error.response.status})`;
+                    await logDebug(`Failed to fetch from ${fallbackUrl} for ${hostname}. Error: ${errorMessage}`);
                 }
-            } catch (error) {
-                let errorMessage = error.message;
-                if (error.response) errorMessage += ` (status: ${error.response.status})`;
-                await logDebug(`Failed to fetch from ${fallbackUrl} for ${hostname}. Error: ${errorMessage}`);
             }
-        }
 
-        await logDebug(`❌ All fallbacks failed for ${hostname}. Using placeholder.`);
-        return placeholder;
-    } finally {
-        processedHostnames.add(rootHostname);
-        processingHostnames.delete(rootHostname);
-    }
+            await logDebug(`❌ All fallbacks failed for ${hostname}. Using placeholder.`);
+            iconCache.set(rootHostname, placeholder); // 缓存失败结果
+            return placeholder;
+        } catch (error) {
+            await logDebug(`💥 Unexpected error during favicon fetch for ${rootHostname}: ${error.message}`);
+            iconCache.set(rootHostname, placeholder); // 缓存异常结果
+            return placeholder;
+        } finally {
+            // 无论成功、失败还是异常，都要从正在进行的Promise map中移除
+            fetchingPromises.delete(rootHostname);
+        }
+    })();
+
+    // 将Promise存入map，然后返回它
+    fetchingPromises.set(rootHostname, fetchPromise);
+    return await fetchPromise;
 }
 
 async function processItemsInParallel(items, itemUrlField = 'url') {
-    const concurrentRequests = CONCURRENT_REQUESTS || 10; // Fallback
-    const batches = [];
-    for (let i = 0; i < items.length; i += concurrentRequests) {
-        batches.push(items.slice(i, i + concurrentRequests));
-    }
+    // 这是一个更高阶的重构，将抓取和绑定分离
 
-    for (const batch of batches) {
-        await Promise.all(batch.map(async (item) => {
-            item.icon = await getFavicon(item.icon || item[itemUrlField]);
-        }));
+    // --- 阶段 1: 收集所有不重复的URL并触发抓取 ---
+    const allFetchPromises = [];
+    const uniqueUrls = new Set();
+    
+    for (const item of items) {
+        const url = item.icon || item[itemUrlField];
+        if (url && url.startsWith('http') && !uniqueUrls.has(url)) {
+            uniqueUrls.add(url);
+            allFetchPromises.push(getFavicon(url));
+        }
     }
+    
+    await logDebug(`Found ${uniqueUrls.size} unique URLs to fetch icons for.`);
+
+    // --- 阶段 2: 等待所有抓取任务完成 ---
+    // Promise.allSettled 确保即使有任务失败，也会等待所有任务结束
+    await Promise.allSettled(allFetchPromises);
+    await logDebug('All icon fetching tasks have been settled.');
+
+    // --- 阶段 3: 同步绑定所有图标 ---
+    // 此时 iconCache 已经完全填充完毕
+    for (const item of items) {
+        const url = item.icon || item[itemUrlField];
+        if (url && url.startsWith('http')) {
+            let hostname;
+            try {
+                hostname = new URL(url).hostname;
+            } catch (e) {
+                item.icon = 'assets/placeholder_icon.svg';
+                continue;
+            }
+            const rootHostname = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
+            if (iconCache.has(rootHostname)) {
+                item.icon = iconCache.get(rootHostname);
+            } else {
+                // 理论上不应该发生，但作为保险
+                item.icon = 'assets/placeholder_icon.svg';
+            }
+        } else {
+            item.icon = url || 'assets/placeholder_icon.svg';
+        }
+    }
+    await logDebug('All icons have been assigned to their items.');
 }
 
 async function collectAndProcessAll(bookmarkNodes, engineConfig) {
-    let allBookmarks = [];
+    const allItems = [];
+
+    // 收集所有书签
     function collectBookmarks(nodes) {
         for (const node of nodes) {
-            if (node.bookmarks) allBookmarks.push(...node.bookmarks);
+            if (node.bookmarks) allItems.push(...node.bookmarks);
             if (node.children) collectBookmarks(node.children);
         }
     }
     collectBookmarks(bookmarkNodes);
-    await logDebug(`Found ${allBookmarks.length} bookmarks to process.`);
-    await processItemsInParallel(allBookmarks, 'url');
+    await logDebug(`Found ${allItems.length} bookmarks.`);
 
-    let allEngines = [];
+    // 收集所有搜索引擎
+    const initialEngineCount = allItems.length;
     function collectEngines(engines) {
         for (const key in engines) {
             const engine = engines[key];
-            allEngines.push(engine);
+            allItems.push(engine);
             if (engine.engines) {
                 collectEngines(engine.engines);
             }
         }
     }
     collectEngines(engineConfig.searchEngines);
-    await logDebug(`Found ${allEngines.length} search engines to process.`);
-    await processItemsInParallel(allEngines, 'url');
+    await logDebug(`Found ${allItems.length - initialEngineCount} search engines.`);
+
+    // 一次性并行处理所有项目
+    await logDebug(`Processing a total of ${allItems.length} items for favicons...`);
+    await processItemsInParallel(allItems, 'url');
 }
 
 // --- 主构建流程 ---
@@ -307,6 +348,22 @@ async function build() {
         await logDebug('Saving final bookmarks.json and config.json...');
         await fs.writeFile(path.join(DIST_DIR, 'bookmarks.json'), JSON.stringify([bookmarksData], null, 2));
         await fs.writeFile(DIST_CONFIG_FILE, JSON.stringify(configData, null, 2));
+
+        // --- 生成并注入 Service Worker 文件列表 ---
+        await logDebug('Generating Service Worker file list...');
+        const baseFiles = ['/', 'index.html', 'style.css', 'script.js', 'bookmarks.json', 'favicon.ico', 'assets/background.webp', 'assets/MapleMono-Medium.woff2', 'assets/placeholder_icon.svg'];
+        const iconFiles = (await fs.readdir(ICONS_DIR)).map(file => `icons/${file}`);
+        const allFilesToCache = [...baseFiles, ...iconFiles];
+
+        let swContent = await fs.readFile(path.join(SRC_DIR, 'sw.js'), 'utf-8');
+        swContent = swContent.replace(
+            'const FILES_TO_CACHE = []; // __REPLACE_ME__',
+            `const FILES_TO_CACHE = ${JSON.stringify(allFilesToCache, null, 2)};`
+        );
+
+        await fs.writeFile(path.join(DIST_DIR, 'sw.js'), swContent);
+        await logDebug('Service Worker configured with all files.');
+        // --- Service Worker 生成完毕 ---
 
         await logDebug('🎉 Build process completed successfully!');
     } catch (error) {
