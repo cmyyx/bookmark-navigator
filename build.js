@@ -111,8 +111,8 @@ function parseBookmarksWithRegex(htmlContent) {
 }
 
 function isPlaceholder(buffer, sourceUrl, hostname, contentType) {
-    // 规则1: Yandex 返回的1x1像素图片文件大小极小
-    if (sourceUrl.includes('yandex.net') && buffer.length < 100) {
+    // 规则1: 任何小于100字节的文件都极有可能是无效的占位符。
+    if (buffer.length < 100) {
         return true;
     }
     // 规则2: favicon.im 返回的SVG占位符通常包含 <text> 元素，而真实图标使用 <path>。
@@ -139,24 +139,21 @@ async function getFavicon(url) {
         return placeholder;
     }
 
-    const rootHostname = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
-
     // 1. 检查最终结果缓存
-    if (iconCache.has(rootHostname)) {
-        return iconCache.get(rootHostname);
+    if (iconCache.has(hostname)) {
+        return iconCache.get(hostname);
     }
 
     // 2. 检查是否有正在进行的Promise
-    if (fetchingPromises.has(rootHostname)) {
-        
-        return await fetchingPromises.get(rootHostname);
+    if (fetchingPromises.has(hostname)) {
+        return await fetchingPromises.get(hostname);
     }
 
     // 3. 如果都没有，则创建新的Promise来处理抓取
     const fetchPromise = (async () => {
         try {
             const fallbackUrls = [
-                `https://${hostname}/favicon.ico`,
+                `https://${hostname}/favicon.ico`, // 优先使用原始hostname
                 `https://www.google.com/s2/favicons?sz=64&domain_url=${hostname}`,
                 `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
                 `https://favicon.im/${hostname}`,
@@ -201,14 +198,14 @@ async function getFavicon(url) {
                         }
                         
                         const hash = crypto.createHash('md5').update(response.data).digest('hex').substring(0, 8);
-                        const iconFilename = `${rootHostname}.${hash}.${extension}`;
+                        const iconFilename = `${hostname}.${hash}.${extension}`;
                         const iconPath = path.join(ICONS_DIR, iconFilename);
                         const relativeIconPath = `icons/${iconFilename}`;
 
                         await fs.writeFile(iconPath, response.data);
                         await logDebug(`✅ Fetched and saved ${iconFilename} from ${fallbackUrl}`);
                         
-                        iconCache.set(rootHostname, relativeIconPath); // 缓存最终结果
+                        iconCache.set(hostname, relativeIconPath); // 缓存最终结果
                         return relativeIconPath;
                     }
                 } catch (error) {
@@ -219,20 +216,20 @@ async function getFavicon(url) {
             }
 
             await logDebug(`❌ All fallbacks failed for ${hostname}. Using placeholder.`);
-            iconCache.set(rootHostname, placeholder); // 缓存失败结果
+            iconCache.set(hostname, placeholder); // 缓存失败结果
             return placeholder;
         } catch (error) {
-            await logDebug(`💥 Unexpected error during favicon fetch for ${rootHostname}: ${error.message}`);
-            iconCache.set(rootHostname, placeholder); // 缓存异常结果
+            await logDebug(`💥 Unexpected error during favicon fetch for ${hostname}: ${error.message}`);
+            iconCache.set(hostname, placeholder); // 缓存异常结果
             return placeholder;
         } finally {
             // 无论成功、失败还是异常，都要从正在进行的Promise map中移除
-            fetchingPromises.delete(rootHostname);
+            fetchingPromises.delete(hostname);
         }
     })();
 
     // 将Promise存入map，然后返回它
-    fetchingPromises.set(rootHostname, fetchPromise);
+    fetchingPromises.set(hostname, fetchPromise);
     return await fetchPromise;
 }
 
@@ -270,9 +267,8 @@ async function processItemsInParallel(items, itemUrlField = 'url') {
                 item.icon = 'assets/placeholder_icon.svg';
                 continue;
             }
-            const rootHostname = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
-            if (iconCache.has(rootHostname)) {
-                item.icon = iconCache.get(rootHostname);
+            if (iconCache.has(hostname)) {
+                item.icon = iconCache.get(hostname);
             } else {
                 // 理论上不应该发生，但作为保险
                 item.icon = 'assets/placeholder_icon.svg';
