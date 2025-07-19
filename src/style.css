@@ -60,39 +60,44 @@
 body {
     font-family: 'MapleMono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     color: var(--text-color);
-    /* 动态渐变背景 */
-    background: linear-gradient(-45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3), var(--gradient-4), var(--gradient-5));
-    background-size: 400% 400%;
-    animation: loading-gradient 15s ease infinite;
+    /* background-color is removed as it's covered by ::before */
     overflow-y: scroll;
     position: relative;
 }
 
+/* 加载动画层 (底层) */
 body::before {
     content: '';
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* background-image 将由 JS 注入 */
+    top: 0; left: 0; width: 100%; height: 100%;
+    /* 动态渐变背景 */
+    background: linear-gradient(-45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3), var(--gradient-4), var(--gradient-5));
+    background-size: 400% 400%;
+    animation: loading-gradient 15s ease infinite;
+    z-index: -2;
+}
+
+/* 最终图片层 (上层) */
+body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: var(--bg-image); /* 由 JS 注入 */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
     z-index: -1;
-    /* 初始透明 */
-    opacity: 0;
-    /* 平滑过渡 */
-    transition: opacity 0.8s ease-in-out;
+    opacity: 0; /* 初始透明 */
+    transition: opacity 0.8s ease-in-out; /* 平滑过渡 */
 }
 
 /* 加载完成后的状态 */
-body.background-loaded {
+body.background-loaded::before {
     /* 停止动画 */
     animation: none;
 }
 
-body.background-loaded::before {
+body.background-loaded::after {
     /* 淡入图片 */
     opacity: 1;
 }
