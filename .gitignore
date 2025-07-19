@@ -1,0 +1,15 @@
+# Dependencies
+/node_modules
+
+# Build output
+/dist
+
+# User-specific files
+# bookmarks.html
+
+# Logs
+debug.log
+npm-debug.log*
+
+# OS-specific
+.DS_Store
