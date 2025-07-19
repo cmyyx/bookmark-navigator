@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的导航</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+</head>
+<body>
+    <div class="background-overlay"></div>
+    <main class="container">
+        <section class="search-section">
+            <div class="search-bar-wrapper">
+                <input type="text" id="search-input" placeholder="探索，从这里开始...">
+                <div class="engine-selector">
+                    <!-- 搜索引擎选项将由JS动态生成 -->
+                </div>
+            </div>
+        </section>
+        <section class="content-section">
+            <aside id="folder-tree" class="folder-tree"></aside>
+            <article id="bookmark-grid" class="bookmark-grid"></article>
+        </section>
+    </main>
+    <script src="script.js"></script>
+    <div id="toast-notification" class="toast hidden">
+      <div class="toast-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-4V7h2v6h-2z"></path></svg>
+      </div>
+      <div class="toast-message">You are currently offline. Displaying cached content.</div>
+    </div>
+</body>
+</html>
