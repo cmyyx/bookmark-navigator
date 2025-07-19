@@ -21,6 +21,8 @@
 
 ## 快速上手 (Quick Start)
 
+推荐查看[我的博客](https://blog.cmtyx.top/posts/0%E6%88%90%E6%9C%AC%E5%BF%AB%E9%80%9F%E6%90%AD%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%B1%9E%E4%BA%8E%E8%87%AA%E5%B7%B1%E7%9A%84%E4%B9%A6%E7%AD%BE%E5%AF%BC%E8%88%AA%E9%A1%B5/),这里会详细一些(
+
 1.  **Fork 本仓库**
     点击页面右上角的 "Fork" 按钮，将此仓库复制到你自己的 GitHub 账户下。
 
