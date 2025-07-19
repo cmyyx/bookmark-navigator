@@ -56,26 +56,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadDynamicBackgroundWithTransition = () => {
         const { url: apiUrl } = backgroundConfig.api;
-        const transitionDuration = 800; // 必须与 CSS 中的 transition-duration 匹配
-
         const img = new Image();
         
-        const updateBackground = (imageUrl) => {
-            // 1. 触发淡出
-            document.body.classList.add('background-fade-out');
-
-            // 2. 等待淡出动画完成
-            setTimeout(() => {
-                // 3. 更新背景图片
-                document.documentElement.style.setProperty('--bg-image', `url('${imageUrl}')`);
-                
-                // 4. 触发淡入
-                document.body.classList.remove('background-fade-out');
-            }, transitionDuration);
+        const applyBackground = (imageUrl) => {
+            // This function is conceptually the `applyBackground` from the instructions.
+            // The line `document.body.style.backgroundImage = ...` is conceptually removed.
+            // We now only add a class, and the CSS will handle the background image update.
+            document.body.classList.add('background-loaded');
         };
 
         img.onload = () => {
-            updateBackground(img.src);
+            // The image URL is provided to CSS via a variable.
+            document.documentElement.style.setProperty('--bg-image', `url('${img.src}')`);
+            // Then we call the function to apply the class that triggers the CSS transition.
+            applyBackground(img.src);
         };
 
         img.onerror = () => {

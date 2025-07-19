@@ -6,13 +6,49 @@
     font-style: normal;
 }
 
+/* --- 动画定义 --- */
+@keyframes loading-gradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 /* --- 全局样式与重置 --- */
 :root {
+    /* Shared */
+    --primary-color: #bb86fc;
+    --secondary-color: #03dac6;
+    --shadow-color: rgba(0, 0, 0, 0.5);
     --transition-speed: 0.25s;
+    --dark-text-color: #2c3e50;
+
+    /* Light Mode */
+    --bg-color: #f4f4f5;
+    --card-bg-color: #ffffff;
     --highlight-color: rgba(255, 255, 255, 0.2);
     --border-color: rgba(255, 255, 255, 0.5);
     --text-color: #f0f0f0;
-    --dark-text-color: #2c3e50;
+    --gradient-1: #e0c3fc;
+    --gradient-2: #8ec5fc;
+    --gradient-3: #f0f2f0;
+    --gradient-4: #a8edea;
+    --gradient-5: #fed6e3;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        /* Dark Mode */
+        --bg-color: #121212;
+        --card-bg-color: #1e1e1e;
+        --text-color: #e0e0e0;
+        --border-color: #2a2a2a;
+        --highlight-color: rgba(255, 255, 255, 0.2);
+        --gradient-1: #0f0c29;
+        --gradient-2: #302b63;
+        --gradient-3: #24243e;
+        --gradient-4: #537895;
+        --gradient-5: #0f0c29;
+    }
 }
 
 * {
@@ -24,7 +60,10 @@
 body {
     font-family: 'MapleMono', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     color: var(--text-color);
-    background-color: #1a1a1a;
+    /* 动态渐变背景 */
+    background: linear-gradient(-45deg, var(--gradient-1), var(--gradient-2), var(--gradient-3), var(--gradient-4), var(--gradient-5));
+    background-size: 400% 400%;
+    animation: loading-gradient 15s ease infinite;
     overflow-y: scroll;
     position: relative;
 }
@@ -36,13 +75,26 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: var(--bg-image, url('assets/background.webp'));
+    /* background-image 将由 JS 注入 */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
     z-index: -1;
-    opacity: 1;
+    /* 初始透明 */
+    opacity: 0;
+    /* 平滑过渡 */
     transition: opacity 0.8s ease-in-out;
+}
+
+/* 加载完成后的状态 */
+body.background-loaded {
+    /* 停止动画 */
+    animation: none;
+}
+
+body.background-loaded::before {
+    /* 淡入图片 */
+    opacity: 1;
 }
 
 body.background-fade-out::before {
