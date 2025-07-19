@@ -53,7 +53,7 @@
 
 ## 自定义 (Customization)
 
-所有自定义选项均在 [`src/config.json`](src/config.json:1) 文件中配置。
+所有自定义选项均在 [`src/config.json`](src/config.json) 文件中配置。
 
 ### 搜索引擎配置
 
@@ -95,9 +95,9 @@
 
 ### 高级自定义
 
-*   **修改字体**: 替换 [`src/assets`](src/assets) 目录中的字体文件，并在 [`src/style.css`](src/style.css:1) 中更新字体名称。
+*   **修改字体**: 替换 [`src/assets`](src/assets) 目录中的字体文件，并在 [`src/style.css`](src/style.css) 中更新字体名称。
 *   **修改默认图标**: 替换 [`src/assets/placeholder_icon.svg`](src/assets/placeholder_icon.svg) 文件来修改网站的默认占位符图标。
-*   **构建设置**: [`buildSettings`](src/config.json:2) 用于配置图标抓取服务的超时和并发数，通常无需修改。
+*   **构建设置**: [`buildSettings`](src/config.json) 用于配置图标抓取服务的超时和并发数，通常无需修改。
 
 ## 面向开发者 (For Developers)
 
