@@ -31,32 +31,35 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    if (event.request.mode !== 'navigate') {
-        // Not a page navigation, bail.
-        return;
-    }
     event.respondWith(
-        fetch(event.request)
-            .then(response => {
-                // Check if we received a valid response
-                if (!response || response.status !== 200 || response.type !== 'basic') {
+        caches.match(event.request)
+            .then((response) => {
+                // Cache hit - return response
+                if (response) {
                     return response;
                 }
 
-                const responseToCache = response.clone();
-                caches.open(CACHE_NAME)
-                    .then(cache => {
-                        cache.put(event.request, responseToCache);
-                    });
+                // Clone the request to use it both for fetching and caching
+                const fetchRequest = event.request.clone();
 
-                return response;
-            })
-            .catch(() => {
-                // Network request failed, try to get it from the cache.
-                return caches.match(event.request)
-                    .then((response) => {
-                        return response || caches.match('index.html');
-                    });
+                return fetch(fetchRequest).then(
+                    (response) => {
+                        // Check if we received a valid response
+                        if (!response || response.status !== 200 || response.type !== 'basic') {
+                            return response;
+                        }
+
+                        // Clone the response to use it both for caching and returning
+                        const responseToCache = response.clone();
+
+                        caches.open(CACHE_NAME)
+                            .then((cache) => {
+                                cache.put(event.request, responseToCache);
+                            });
+
+                        return response;
+                    }
+                );
             })
     );
 });
