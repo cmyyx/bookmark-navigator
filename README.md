@@ -1,6 +1,19 @@
-# Git-Driven 个人书签主页
+# 个人书签主页
 
-这是一个全自动的个人导航主页生成器。它会读取您从浏览器导出的 `bookmarks.html` 文件，自动抓取每个网站的图标（favicon），并生成一个美观、快速、纯静态的导航网页。
+一个美观、快速、可完全离线使用的个人书签主页。
+
+网页预览:[部署在vercel,大陆访问不友好](https://bookmark-navigator-cmyyxs-projects.vercel.app/)
+
+![](./images/首页.png)
+
+搜索引擎支持嵌套,能显示子搜索引擎菜单
+
+![](./images/搜索引擎下拉框.png)
+
+只要你访问过产生缓存,离线也能访问~~没什么用~~
+
+![](./images/离线.png)
+
 
 ## ✨ 主要特性
 
@@ -10,49 +23,84 @@
 - **高度可定制**：通过 `src/config.json` 文件，您可以轻松自定义搜索引擎、快捷方式等。
 - **高效稳定**：采用并发请求以加快图标获取速度，并内置了强大的错误处理和重试逻辑。
 
-## 🚀 如何使用
+## 快速上手 (Quick Start)
 
-1.  **准备环境**:
-    - 确保您的电脑上已安装 [Node.js](https://nodejs.org/) (推荐 v16 或更高版本)。
-    - 在项目根目录下运行以下命令来安装所需依赖：
-      ```bash
-      npm install
-      ```
+1.  **Fork 本仓库**
+    点击页面右上角的 "Fork" 按钮，将此仓库复制到你自己的 GitHub 账户下。
 
-2.  **放置书签文件**:
-    - 从您的浏览器（Chrome, Firefox, Edge 等）导出书签为 `bookmarks.html` 文件。*(测试浏览器为Zen Browser,其他浏览器未做测试)*
-    - 将这个文件放置在项目的根目录下。
+2.  **替换书签文件**
+    将你常用的浏览器书签导出为 `bookmarks.html` 文件，然后用它替换掉仓库根目录下的 `bookmarks.html` 文件。
 
-3.  **自定义配置 (可选)**:
-    - 打开 `src/config.json` 文件。
-    - 您可以修改 `searchEngines` 部分来配置您喜欢的搜索引擎。
-    - `buildSettings` 部分为高级设置，如不了解其作用，建议保持默认。
+完成以上两步后，你的书签主页就可以部署了。
 
-4.  **生成网站**:
-    - 运行以下命令来启动构建过程：
-      ```bash
-      npm run build
-      ```
-    - 脚本会开始处理书签并下载所有图标。您可以在命令行中看到实时进度。
+## 部署 (Deployment)
 
-5.  **查看成果**:
-    - 构建完成后，所有的网站文件都会被生成在 `dist` 文件夹中。
-    - 在浏览器中打开 `dist/index.html` 文件，即可看到您的个人导航主页。
+你可以将此项目部署到任何静态托管平台（如 Vercel, Cloudflare Pages, Netlify 等）。
 
-## 📁 文件结构
+在平台的项目设置中，请填写以下信息：
 
+- **构建命令 (Build Command):** `npm run build`
+- **输出目录 (Output Directory):** `dist`
+
+### 本地使用
+
+如果你希望在本地环境运行：
+
+1.  确保你已安装 [Node.js](https://nodejs.org/)。
+2.  在项目根目录执行 `npm install` 来安装依赖。
+3.  执行 `npm run build` 来构建项目。
+4.  构建产物将位于 `dist` 目录，你可以将其部署到任何静态服务器，或直接在浏览器中打开 `dist/index.html`。
+
+## 自定义 (Customization)
+
+所有自定义选项均在 [`src/config.json`](src/config.json:1) 文件中配置。
+
+### 搜索引擎配置
+
+这是核心功能之一。你可以在 `searchEngines` 对象中添加、修改或删除搜索引擎。
+
+*   **结构**: 这是一个对象，每个键代表一个搜索引擎的标识符（如 "google"）。
+*   **占位符**: 在 `url` 中使用 `{query}` 作为搜索词的占位符。
+*   **嵌套引擎**: 你可以在一个搜索引擎内部定义一个 `engines` 对象，以创建子搜索引擎（例如，Bilibili 的视频搜索和专栏搜索）。
+
+**格式示例：**
+```json
+"searchEngines": {
+  "google": {
+    "name": "Google",
+    "url": "https://www.google.com/search?q={query}",
+    "icon": ""
+  },
+  "bilibili": {
+    "name": "哔哩哔哩",
+    "url": "https://search.bilibili.com/all?keyword={query}",
+    "icon": "https://www.bilibili.com/favicon.ico",
+    "engines": {
+      "bv": {
+        "name": "AV/BV号搜索",
+        "url": "https://www.bilibili.com/video/{query}",
+        "icon": ""
+      }
+    }
+  }
+}
 ```
-.
-├── dist/                # 自动生成的网站最终成品
-│   ├── icons/           # 自动下载的网站图标
-│   ├── index.html       # 网站主页面
-│   └── ...
-├── src/                 # 网站模板和配置文件
-│   ├── config.json      # 核心配置文件（搜索引擎等）
-│   ├── index.html       # 网站的 HTML 模板
-│   ├── style.css        # 网站的 CSS 样式
-│   └── script.js        # 网站的 JavaScript 逻辑
-├── bookmarks.html       # 您的书签源文件
-├── build.js             # 核心构建脚本
-├── package.json         # 项目依赖信息
-└── README.md            # 本文档
+
+### 背景设置
+
+你可以修改 `background` 部分来设置背景。
+
+*   **本地静态背景**: 默认使用 `fallback` 字段指定的本地背景图片。
+*   **API 动态背景**: 将 `api.enabled` 设置为 `true` 并配置API以通过API获取背景图片。
+
+### 高级自定义
+
+*   **修改字体**: 替换 [`src/assets`](src/assets) 目录中的字体文件，并在 [`src/style.css`](src/style.css:1) 中更新字体名称。
+*   **修改默认图标**: 替换 [`src/assets/placeholder_icon.svg`](src/assets/placeholder_icon.svg) 文件来修改网站的默认占位符图标。
+*   **构建设置**: [`buildSettings`](src/config.json:2) 用于配置图标抓取服务的超时和并发数，通常无需修改。
+
+## 面向开发者 (For Developers)
+
+如果你对本项目的技术实现感兴趣或希望参与贡献，请查阅 [`README.dev.md`](README.dev.md) 以获取更详细的开发和构建信息。
+
+我们欢迎并鼓励社区通过提交 Issues 和 Pull Requests 来帮助我们改进项目。
