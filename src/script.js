@@ -45,46 +45,42 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 始终设置一个默认背景
-        document.documentElement.style.setProperty('--bg-image', `url('${backgroundConfig.fallback}')`);
-
-        // 如果启用了API，则加载动态背景并应用过渡
+        // 根据配置决定加载哪个背景
         if (backgroundConfig.api && backgroundConfig.api.enabled) {
-            loadDynamicBackgroundWithTransition();
+            loadDynamicBackgroundWithTransition(backgroundConfig.api.url, backgroundConfig.fallback);
+        } else {
+            loadDynamicBackgroundWithTransition(backgroundConfig.fallback);
         }
     };
 
-    const loadDynamicBackgroundWithTransition = () => {
-        const { url: apiUrl } = backgroundConfig.api;
-        const transitionDuration = 800; // 必须与 CSS 中的 transition-duration 匹配
-
+    const loadDynamicBackgroundWithTransition = (primaryUrl, fallbackUrl) => {
         const img = new Image();
-        
-        const updateBackground = (imageUrl) => {
-            // 1. 触发淡出
-            document.body.classList.add('background-fade-out');
-
-            // 2. 等待淡出动画完成
-            setTimeout(() => {
-                // 3. 更新背景图片
-                document.documentElement.style.setProperty('--bg-image', `url('${imageUrl}')`);
-                
-                // 4. 触发淡入
-                document.body.classList.remove('background-fade-out');
-            }, transitionDuration);
-        };
+        img.src = primaryUrl;
 
         img.onload = () => {
-            updateBackground(img.src);
+            document.documentElement.style.setProperty('--bg-image', `url('${primaryUrl}')`);
+            document.body.classList.add('background-loaded');
         };
 
         img.onerror = () => {
-            console.error('Failed to load dynamic background, using fallback.');
-            // 当API失败时，我们不需要做任何事，因为fallback已经是默认背景了
+            console.error(`Failed to load primary image: ${primaryUrl}.`);
+            if (fallbackUrl) {
+                console.log(`Attempting to load fallback image: ${fallbackUrl}`);
+                const fallbackImg = new Image();
+                fallbackImg.src = fallbackUrl;
+                fallbackImg.onload = () => {
+                    document.documentElement.style.setProperty('--bg-image', `url('${fallbackUrl}')`);
+                    document.body.classList.add('background-loaded');
+                };
+                fallbackImg.onerror = () => {
+                    console.error(`Failed to load fallback image: ${fallbackUrl}.`);
+                    // 此时页面将保持加载动画状态
+                };
+            } else {
+                // 如果没有 fallbackUrl，说明唯一的图片也加载失败了
+                console.error('No fallback image available.');
+            }
         };
-
-        // 预加载图片
-        img.src = apiUrl;
     };
 
     // --- 数据加载 ---
