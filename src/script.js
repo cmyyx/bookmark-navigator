@@ -1,3 +1,90 @@
+// --- Service Worker Registration & Communication (Immediate Execution) ---
+const statusIndicator = document.getElementById('status-indicator');
+
+const showStatus = (message, duration) => {
+    if (!statusIndicator) return;
+
+    // Apply styles directly via JS to bypass any potential CSS caching issues.
+    // This makes the feature more robust.
+    Object.assign(statusIndicator.style, {
+        position: 'fixed',
+        bottom: '20px',
+        right: '20px',
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        color: 'white',
+        padding: '10px 20px',
+        borderRadius: '5px',
+        fontSize: '14px',
+        zIndex: '1001',
+        transition: 'opacity 0.5s',
+        opacity: '1',
+        visibility: 'visible'
+    });
+
+    statusIndicator.textContent = message;
+
+    if (duration) {
+        setTimeout(() => {
+            statusIndicator.style.opacity = '0';
+            // Hide it completely after the transition
+            setTimeout(() => {
+                statusIndicator.style.visibility = 'hidden';
+            }, 500); // Corresponds to transition duration
+        }, duration);
+    }
+};
+
+if ('serviceWorker' in navigator) {
+    let installTimeout;
+
+    // Use a Broadcast Channel for the most reliable communication.
+    const channel = new BroadcastChannel('sw-messages');
+    channel.onmessage = (event) => {
+        clearTimeout(installTimeout);
+        if (!event.data || !statusIndicator) return;
+        const { type, payload } = event.data;
+
+        if (type === 'caching-progress') {
+            const { total, current, asset, status } = payload;
+            const statusText = status === 'success' ? '缓存成功' : '缓存失败';
+            showStatus(`[${current}/${total}] ${statusText}: ${asset}`);
+        } else if (type === 'caching-complete') {
+            showStatus('离线资源加载完成。', 5000);
+            channel.close(); // We can close the channel once the work is done.
+        }
+    };
+
+    // Register the service worker with the correct absolute path for deployed environments.
+    navigator.serviceWorker.register('sw.js').then(registration => {
+        console.log('Service Worker registered, waiting for installation...');
+        installTimeout = setTimeout(() => {
+            showStatus('离线功能安装超时，请使用 Ctrl+Shift+R 强制刷新重试。');
+        }, 20000); // Increased timeout to 20s for very slow networks
+
+        const installingWorker = registration.installing;
+        if (installingWorker) {
+            installingWorker.onstatechange = () => {
+                if (installingWorker.state === 'redundant') {
+                    clearTimeout(installTimeout);
+                    showStatus('离线功能安装失败，请使用 Ctrl+Shift+R 强制刷新重试。');
+                    console.error('Service Worker installation failed, it became redundant.');
+                }
+            };
+        } else {
+            clearTimeout(installTimeout);
+        }
+    }).catch(error => {
+        console.error('Service Worker registration failed:', error);
+        showStatus('Service Worker 注册失败，浏览器可能不支持或已禁用。');
+    });
+
+    if (navigator.serviceWorker.controller) {
+        console.log('This page is already controlled by a service worker.');
+        showStatus('已从缓存加载。', 3000);
+    }
+}
+
+// --- Main Application Logic ---
 document.addEventListener('DOMContentLoaded', () => {
     const folderTree = document.getElementById('folder-tree');
     const bookmarkGrid = document.getElementById('bookmark-grid');
@@ -10,41 +97,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let backgroundConfig = {};
     let currentEngine = 'bookmark';
     let currentSearchUrl = null;
+    let iconObserver;
 
-    // --- 初始化 ---
     const init = async () => {
-        await Promise.all([
-            loadConfig(),
-            loadBookmarks()
-        ]);
-        
+        setupIconObserver();
+        await Promise.all([loadConfig(), loadBookmarks()]);
         renderSearchEngines();
         if (bookmarksData.length > 0 && bookmarksData[0].children) {
             renderFolderTree(bookmarksData[0].children, folderTree, 0);
         }
-        
         if (bookmarksData.length > 0) {
             const firstFolder = findFirstFolderWithBookmarks(bookmarksData);
             if (firstFolder) {
                 renderBookmarks(firstFolder.bookmarks);
-                // TODO: Highlight the first folder
             }
         }
-        
         setupEventListeners();
         setActiveEngine('bookmark');
-        
         setupBackground();
     };
 
-    // --- 背景设置 ---
     const setupBackground = () => {
         if (!backgroundConfig || !backgroundConfig.fallback) {
             console.error("Background config is missing or invalid.");
             return;
         }
-
-        // 根据配置决定加载哪个背景
         if (backgroundConfig.api && backgroundConfig.api.enabled) {
             loadDynamicBackgroundWithTransition(backgroundConfig.api.url, backgroundConfig.fallback);
         } else {
@@ -55,34 +132,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadDynamicBackgroundWithTransition = (primaryUrl, fallbackUrl) => {
         const img = new Image();
         img.src = primaryUrl;
-
         img.onload = () => {
             document.documentElement.style.setProperty('--bg-image', `url('${primaryUrl}')`);
             document.body.classList.add('background-loaded');
         };
-
         img.onerror = () => {
             console.error(`Failed to load primary image: ${primaryUrl}.`);
             if (fallbackUrl) {
-                console.log(`Attempting to load fallback image: ${fallbackUrl}`);
                 const fallbackImg = new Image();
                 fallbackImg.src = fallbackUrl;
                 fallbackImg.onload = () => {
                     document.documentElement.style.setProperty('--bg-image', `url('${fallbackUrl}')`);
                     document.body.classList.add('background-loaded');
                 };
-                fallbackImg.onerror = () => {
-                    console.error(`Failed to load fallback image: ${fallbackUrl}.`);
-                    // 此时页面将保持加载动画状态
-                };
+                fallbackImg.onerror = () => console.error(`Failed to load fallback image: ${fallbackUrl}.`);
             } else {
-                // 如果没有 fallbackUrl，说明唯一的图片也加载失败了
                 console.error('No fallback image available.');
             }
         };
     };
 
-    // --- 数据加载 ---
     const loadConfig = async () => {
         try {
             const response = await fetch('config.json');
@@ -113,10 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentPath = [...path, node.name];
             if (node.bookmarks) {
                 node.bookmarks.forEach(b => {
-                    // 从 build.js 传递过来的原始路径优先级更高
-                    if (!b.path) {
-                        b.path = path.join(' / ');
-                    }
+                    if (!b.path) b.path = path.join(' / ');
                 });
                 bookmarks = bookmarks.concat(node.bookmarks);
             }
@@ -126,38 +192,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return bookmarks;
     };
-    
+
     const findFirstFolderWithBookmarks = (nodes) => {
-        for(const node of nodes) {
-            if(node.bookmarks && node.bookmarks.length > 0) return node;
-            if(node.children) {
+        for (const node of nodes) {
+            if (node.bookmarks && node.bookmarks.length > 0) return node;
+            if (node.children) {
                 const found = findFirstFolderWithBookmarks(node.children);
-                if(found) return found;
+                if (found) return found;
             }
         }
         return null;
     };
 
-    // --- 渲染逻辑 ---
     const renderFolderTree = (nodes, parentElement, level) => {
         const ul = document.createElement('ul');
         if (level > 0) ul.style.paddingLeft = `1rem`;
-
         nodes.forEach(node => {
             if (!node.name) return;
             const li = document.createElement('li');
             li.textContent = node.name;
             li.classList.add('folder-item');
-            
             li.addEventListener('click', (e) => {
                 e.stopPropagation();
                 document.querySelectorAll('.folder-item').forEach(el => el.classList.remove('active'));
                 li.classList.add('active');
                 renderBookmarks(node.bookmarks || []);
             });
-
             parentElement.appendChild(li);
-
             if (node.children && node.children.length > 0) {
                 renderFolderTree(node.children, li, level + 1);
             }
@@ -175,12 +236,16 @@ document.addEventListener('DOMContentLoaded', () => {
             item.classList.add('bookmark-item');
 
             const icon = document.createElement('img');
-            icon.src = bookmark.icon;
-            icon.onerror = () => { icon.src = 'assets/placeholder_icon.svg'; };
+            icon.dataset.src = bookmark.icon;
+            icon.src = 'assets/placeholder_icon.svg';
+            icon.onerror = () => {
+                icon.src = 'assets/placeholder_icon.svg';
+                if (iconObserver) iconObserver.unobserve(item);
+            };
 
             const name = document.createElement('span');
             name.textContent = bookmark.name;
-            name.title = bookmark.name; // Add full name to title attribute for tooltip
+            name.title = bookmark.name;
 
             item.appendChild(icon);
             item.appendChild(name);
@@ -194,6 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             bookmarkGrid.appendChild(item);
+            if (iconObserver) iconObserver.observe(item);
         });
     };
 
@@ -208,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const icon = document.createElement('img');
             icon.src = engine.icon;
             icon.onerror = () => { icon.src = 'assets/placeholder_icon.svg'; };
-            
+
             const name = document.createElement('span');
             name.textContent = engine.name;
 
@@ -224,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     dropdownItem.classList.add('dropdown-item');
                     dropdownItem.dataset.engineKey = subKey;
                     dropdownItem.dataset.parentKey = key;
-                    
+
                     const subIcon = document.createElement('img');
                     subIcon.src = subEngine.icon;
                     subIcon.onerror = () => { subIcon.src = 'assets/placeholder_icon.svg'; };
@@ -238,35 +304,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 option.appendChild(dropdown);
             }
-            
             engineSelector.appendChild(option);
         }
     };
 
-    // --- 事件与逻辑 ---
     const setActiveEngine = (key, parentKey) => {
-        // 移除所有高亮
         document.querySelectorAll('.engine-option, .dropdown-item').forEach(el => {
             el.classList.remove('active', 'parent-active');
         });
-
         if (parentKey) {
-            // 选中了子菜单项
             const parentEl = engineSelector.querySelector(`.engine-option[data-engine-key="${parentKey}"]`);
             const subEl = engineSelector.querySelector(`.dropdown-item[data-engine-key="${key}"]`);
-            
             if (parentEl) parentEl.classList.add('parent-active');
             if (subEl) subEl.classList.add('active');
-
             const parentEngine = searchEngines[parentKey];
             const subEngine = parentEngine.engines[key];
             currentEngine = key;
             currentSearchUrl = subEngine.url;
         } else {
-            // 选中了主菜单项
             const engineEl = engineSelector.querySelector(`.engine-option[data-engine-key="${key}"]`);
             if (engineEl) engineEl.classList.add('active');
-            
             const engine = searchEngines[key];
             currentEngine = key;
             currentSearchUrl = engine.url;
@@ -274,11 +331,27 @@ document.addEventListener('DOMContentLoaded', () => {
         searchInput.focus();
     };
 
+    const setupIconObserver = () => {
+        const options = { root: null, rootMargin: '0px', threshold: 0.1 };
+        iconObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const item = entry.target;
+                    const icon = item.querySelector('img');
+                    const realSrc = icon.dataset.src;
+                    if (realSrc) {
+                        icon.src = realSrc;
+                        observer.unobserve(item);
+                    }
+                }
+            });
+        }, options);
+    };
+
     const setupEventListeners = () => {
         engineSelector.addEventListener('click', (e) => {
             const target = e.target.closest('.engine-option, .dropdown-item');
             if (!target) return;
-
             const key = target.dataset.engineKey;
             const parentKey = target.dataset.parentKey;
             setActiveEngine(key, parentKey);
@@ -296,8 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const activeFolder = document.querySelector('.folder-item.active');
                     if (activeFolder) activeFolder.click();
                     else if (bookmarksData.length > 0) {
-                         const firstFolder = findFirstFolderWithBookmarks(bookmarksData);
-                         if (firstFolder) renderBookmarks(firstFolder.bookmarks);
+                        const firstFolder = findFirstFolderWithBookmarks(bookmarksData);
+                        if (firstFolder) renderBookmarks(firstFolder.bookmarks);
                     }
                 }
             }
@@ -312,14 +385,4 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     init();
-
-    window.addEventListener('load', () => {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then(registration => {
-                console.log('Service Worker registered with scope:', registration.scope);
-            }).catch(error => {
-                console.error('Service Worker registration failed:', error);
-            });
-        }
-    });
 });
