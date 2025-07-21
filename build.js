@@ -347,16 +347,16 @@ async function build() {
 
         // --- 生成并注入 Service Worker 文件列表 ---
         await logDebug('Generating Service Worker file list...');
-        const baseFiles = ['/', 'index.html', 'style.css', 'script.js', 'bookmarks.json', 'favicon.ico', 'assets/background.webp', 'assets/MapleMono-Medium.woff2', 'assets/placeholder_icon.svg'];
-        const iconFiles = (await fs.readdir(ICONS_DIR)).map(file => `icons/${file}`);
-        const allFilesToCache = [...baseFiles, ...iconFiles];
+        const coreAssets = ['index.html', 'style.css', 'script.js', 'bookmarks.json', 'config.json', 'favicon.ico', 'assets/background.webp', 'assets/MapleMono-Medium.woff2', 'assets/placeholder_icon.svg'];
+        const iconAssets = (await fs.readdir(ICONS_DIR)).map(file => `icons/${file}`);
 
         let swContent = await fs.readFile(path.join(SRC_DIR, 'sw.js'), 'utf-8');
         const cacheVersion = `bookmarks-cache-v${Date.now()}`;
 
         swContent = swContent
             .replace(`'bookmarks-cache-v1'`, `'${cacheVersion}'`)
-            .replace(`self.__FILES_TO_CACHE__ || []`, JSON.stringify(allFilesToCache, null, 2));
+            .replace(`self.__CORE_ASSETS__ || []`, JSON.stringify(coreAssets, null, 2))
+            .replace(`self.__ICON_ASSETS__ || []`, JSON.stringify(iconAssets, null, 2));
 
         await fs.writeFile(path.join(DIST_DIR, 'sw.js'), swContent);
         await logDebug('Service Worker configured with all files.');
