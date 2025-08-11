@@ -2,7 +2,7 @@
 
 一个美观、快速的书签导航页。
 
-网页预览:[大陆访问不友好](https://bookmarks-cmyyx.netlify.app/)
+网页预览: https://bookmarks-cmyyx.netlify.app
 
 
 [![Hosted on Netlify](https://www.netlify.com/img/global/badges/netlify-color-accent.svg)](https://app.netlify.com)
