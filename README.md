@@ -3,10 +3,10 @@
 一个美观、快速的书签导航页。
 
 网页预览:[大陆访问不友好](https://bookmarks-cmyyx.netlify.app/)
-[![Hosted on Netlify]
 
 
-(https://www.netlify.com/img/global/badges/netlify-color-accent.svg)](https://app.netlify.com)
+[![Hosted on Netlify](https://www.netlify.com/img/global/badges/netlify-color-accent.svg)](https://app.netlify.com)
+
 
 
 ![](./images/首页.png)
@@ -107,3 +107,10 @@
 如果你对本项目的技术实现感兴趣或希望参与贡献，请查阅 [`README.dev.md`](README.dev.md) 以获取更详细的开发和构建信息。
 
 我们欢迎并鼓励社区通过提交 Issues 和 Pull Requests 来帮助我们改进项目。
+
+
+---
+
+## Acknowledgements / 致谢
+
+This project is deployed and hosted with the help of [Netlify](https://app.netlify.com).
