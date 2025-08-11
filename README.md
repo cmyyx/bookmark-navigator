@@ -114,3 +114,9 @@
 ## Acknowledgements / 致谢
 
 This project is deployed and hosted with the help of [Netlify](https://app.netlify.com).
+
+---
+
+## Code of Conduct
+
+[Code of Conduct](CODE_OF_CONDUCT.md)
