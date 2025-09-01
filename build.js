@@ -338,8 +338,16 @@ async function build() {
         await logDebug('Reading and parsing bookmarks.html...');
         const htmlContent = await fs.readFile(BOOKMARKS_FILE, 'utf-8');
         const bookmarksData = parseBookmarksWithRegex(htmlContent);
+        
+        // 检查命令行参数，如果包含 --no-icons 则跳过图标处理
+        const args = process.argv.slice(2);
+        const noIcons = args.includes('--no-icons');
 
-        await collectAndProcessAll([bookmarksData], configData);
+        if (noIcons) {
+            await logDebug('Skipping icon fetching as per --no-icons flag.');
+        } else {
+            await collectAndProcessAll([bookmarksData], configData);
+        }
 
         await logDebug('Saving final bookmarks.json and config.json...');
         await fs.writeFile(path.join(DIST_DIR, 'bookmarks.json'), JSON.stringify([bookmarksData], null, 2));

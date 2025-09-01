@@ -104,7 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
         await Promise.all([loadConfig(), loadBookmarks()]);
         renderSearchEngines();
         if (bookmarksData.length > 0 && bookmarksData[0].children) {
-            renderFolderTree(bookmarksData[0].children, folderTree, 0);
+            const folderList = document.getElementById('folder-list');
+            renderFolderTree(bookmarksData[0].children, folderList, 0);
         }
         if (bookmarksData.length > 0) {
             const firstFolder = findFirstFolderWithBookmarks(bookmarksData);
@@ -113,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         setupEventListeners();
+        setupCheckButton();
         setActiveEngine('bookmark');
         setupBackground();
     };
@@ -258,6 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.appendChild(pathElement);
             }
 
+            const statusContainer = document.createElement('div');
+            statusContainer.classList.add('status-badge-container');
+            item.appendChild(statusContainer);
+
             bookmarkGrid.appendChild(item);
             if (iconObserver) iconObserver.observe(item);
         });
@@ -349,6 +355,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const setupEventListeners = () => {
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsContent = document.getElementById('settings-content');
+
+        if (settingsToggle && settingsContent) {
+            settingsToggle.addEventListener('click', () => {
+                settingsToggle.classList.toggle('active');
+                settingsContent.classList.toggle('visible');
+            });
+        }
+
         engineSelector.addEventListener('click', (e) => {
             const target = e.target.closest('.engine-option, .dropdown-item');
             if (!target) return;
@@ -384,5 +400,75 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const checkBookmarkStatus = async (bookmarkItem) => {
+        const url = bookmarkItem.href;
+        const statusContainer = bookmarkItem.querySelector('.status-badge-container');
+        if (!url || !statusContainer) return;
+
+        // 清空旧徽章并显示加载中
+        statusContainer.innerHTML = '';
+        const loadingBadge = createStatusBadge('...');
+        loadingBadge.classList.add('status-loading');
+        statusContainer.appendChild(loadingBadge);
+
+        try {
+            const response = await fetch(`http://localhost:3000/check-url?url=${encodeURIComponent(url)}`);
+            const data = await response.json();
+            
+            statusContainer.innerHTML = ''; // 清空加载中
+
+            if (data.isRedirect) {
+                const initialBadge = createStatusBadge(data.initialStatus);
+                statusContainer.appendChild(initialBadge);
+            }
+            
+            const finalBadge = createStatusBadge(data.finalStatus);
+            statusContainer.appendChild(finalBadge);
+
+
+        } catch (error) {
+            console.error('Failed to check bookmark status via proxy:', error);
+            statusContainer.innerHTML = '';
+            const errorBadge = createStatusBadge('FAIL');
+            errorBadge.title = '无法连接到代理服务器';
+            statusContainer.appendChild(errorBadge);
+        }
+    };
+
+    const createStatusBadge = (status) => {
+        const badge = document.createElement('div');
+        badge.className = 'status-badge visible';
+        badge.textContent = status;
+
+        if (typeof status === 'number') {
+            if (status >= 200 && status < 300) badge.classList.add('status-success');
+            else if (status >= 300 && status < 400) badge.classList.add('status-redirect');
+            else if (status >= 400 && status < 500) badge.classList.add('status-client-error');
+            else badge.classList.add('status-error');
+        } else { // 'DNS Error', 'Timeout', 'FAIL' etc.
+            badge.classList.add('status-error');
+            badge.title = status;
+        }
+        return badge;
+    };
+
+    const setupCheckButton = () => {
+        const checkBtn = document.getElementById('check-bookmarks-btn');
+        if (!checkBtn) return;
+
+        checkBtn.addEventListener('click', () => {
+            const bookmarkItems = document.querySelectorAll('.bookmark-item');
+            if(bookmarkItems.length === 0) {
+                showStatus('当前没有书签可供检测。', 3000);
+                return;
+            }
+            showStatus(`开始检测 ${bookmarkItems.length} 个书签...`, 3000);
+            // 为每个书签异步调用检测函数
+            bookmarkItems.forEach(item => {
+                checkBookmarkStatus(item);
+            });
+        });
+    };
+    
     init();
 });

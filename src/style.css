@@ -275,11 +275,17 @@ body.background-fade-out::before {
 
 .folder-tree {
     background-color: rgba(0, 0, 0, 0.2);
-    padding: 1rem;
     border-radius: 12px;
     backdrop-filter: blur(5px);
     max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#folder-list {
+    padding: 1rem;
     overflow-y: auto;
+    flex-grow: 1;
 }
 
 .folder-tree ul {
@@ -403,4 +409,153 @@ body.background-fade-out::before {
 .bookmark-item img.is-placeholder-offline {
   opacity: 0.4;
   filter: grayscale(80%);
+}
+/* --- 链接检测功能样式 --- */
+.settings-panel {
+    padding: 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: auto; /* Pushes to the bottom */
+}
+
+.settings-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: background-color var(--transition-speed) ease;
+}
+
+.settings-toggle:hover {
+    background-color: var(--highlight-color);
+}
+
+.settings-toggle svg {
+    fill: var(--text-color);
+    opacity: 0.7;
+    transition: all var(--transition-speed) ease;
+}
+
+.settings-toggle:hover svg {
+    opacity: 1;
+    transform: scale(1.1) rotate(15deg);
+}
+
+.settings-toggle.active svg {
+    transform: rotate(90deg);
+}
+
+.settings-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, opacity 0.3s ease-in-out, padding-top 0.4s ease-out, padding-bottom 0.4s ease-out;
+    text-align: center;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.settings-content.visible {
+    opacity: 1;
+    max-height: 200px; /* A reasonable max height for the content */
+    padding-top: 1rem;
+    padding-bottom: 0.5rem;
+}
+
+.settings-content p {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 0.5rem;
+}
+
+.settings-content code {
+    display: inline-block;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 0.3rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
+}
+
+.check-btn {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--text-color);
+    background-color: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease-in-out;
+    backdrop-filter: blur(5px);
+}
+
+.check-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: white;
+}
+
+.bookmark-item .status-badge-container {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+}
+
+.bookmark-item .status-badge {
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+    background-color: #9e9e9e; /* 默认灰色 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: all var(--transition-speed) ease;
+    opacity: 0; /* 初始隐藏 */
+    transform: scale(0.8);
+}
+
+.bookmark-item .status-badge.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.bookmark-item .status-badge.status-loading {
+    background-color: #ffc107; /* 黄色 */
+    animation: pulse 1.5s infinite;
+}
+
+.bookmark-item .status-badge.status-success {
+    background-color: #28a745; /* 绿色 */
+}
+
+.bookmark-item .status-badge.status-error {
+    background-color: #dc3545; /* 红色 */
+}
+
+.bookmark-item .status-badge.status-redirect {
+    background-color: #17a2b8; /* 青色 */
+}
+
+.bookmark-item .status-badge.status-client-error {
+    background-color: #fd7e14; /* 橙色 */
+}
+
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+    }
+    100% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+    }
 }

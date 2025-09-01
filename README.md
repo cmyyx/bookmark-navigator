@@ -51,6 +51,22 @@
 3.  执行 `npm run build` 来构建项目。
 4.  构建产物将位于 `dist` 目录，你可以将其部署到任何静态服务器，或直接在浏览器中打开 `dist/index.html`。
 
+### 本地开发
+
+如果您想在本地环境中测试所有功能（例如，书签链接可用性检测），您需要同时运行代理服务器和前端页面。
+
+1.  **启动代理服务器**:
+    打开一个终端，进入项目根目录，然后运行以下命令。此终端需要保持运行状态。
+    ```bash
+    npm run start:proxy
+    ```
+    您应该会看到日志输出 `Proxy server with CORS and logging listening at http://localhost:3000`。
+
+2.  **访问前端页面**:
+    直接在浏览器中打开 `src/index.html` 文件（注意是 `src` 目录，不是 `dist`）。
+
+现在，页面上的“检测当前书签状态”按钮应该可以正常工作，并且代理服务器的终端会显示相应的请求日志。
+
 ## 自定义 (Customization)
 
 所有自定义选项均在 [`src/config.json`](src/config.json) 文件中配置。

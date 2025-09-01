@@ -19,7 +19,23 @@
             </div>
         </section>
         <section class="content-section">
-            <aside id="folder-tree" class="folder-tree"></aside>
+            <aside id="folder-tree" class="folder-tree">
+                <div id="folder-list"></div>
+                <div class="settings-panel">
+                    <div id="settings-toggle" class="settings-toggle">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                            <path d="M19.82 10.26a8.5 8.5 0 00-1.04-2.3l.5-1.72a1 1 0 00-1.2-1.2l-1.72.5a8.5 8.5 0 00-2.3-1.04l-.5-1.73a1 1 0 00-1.96 0l-.5 1.73a8.5 8.5 0 00-2.3 1.04l-1.72-.5a1 1 0 00-1.2 1.2l.5 1.72a8.5 8.5 0 00-1.04 2.3l-1.73.5a1 1 0 000 1.96l1.73.5a8.5 8.5 0 001.04 2.3l-.5 1.72a1 1 0 001.2 1.2l1.72-.5a8.5 8.5 0 002.3 1.04l.5 1.73a1 1 0 001.96 0l.5-1.73a8.5 8.5 0 002.3-1.04l1.72.5a1 1 0 001.2-1.2l-.5-1.72a8.5 8.5 0 001.04-2.3l1.73-.5a1 1 0 000-1.96l-1.73-.5zM12 15.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z"/>
+                        </svg>
+                    </div>
+                    <div id="settings-content" class="settings-content">
+                        <div class="settings-content-inner">
+                            <p>此功能需要在本地运行开发服务器。</p>
+                            <code>npm run start:proxy</code>
+                            <button id="check-bookmarks-btn" class="check-btn">开始检测</button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
             <article id="bookmark-grid" class="bookmark-grid"></article>
         </section>
     </main>

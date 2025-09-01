@@ -86,44 +86,47 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // We only want to handle GET requests
-    if (event.request.method !== 'GET') {
+    const { request } = event;
+    const url = new URL(request.url);
+
+    // 1. 对于发往代理的API请求，直接从网络获取，不使用缓存
+    if (url.origin === 'http://localhost:3000') {
+        // 直接执行网络请求，不经过缓存
+        event.respondWith(fetch(request));
         return;
     }
 
-    event.respondWith(
-        caches.match(event.request)
-            .then((cachedResponse) => {
-                // If the resource is in the cache, return it
-                if (cachedResponse) {
-                    return cachedResponse;
-                }
+    // 2. 对于其他GET请求，采用 "Cache then network" 策略
+    if (request.method === 'GET') {
+        event.respondWith(
+            caches.open(CACHE_NAME).then((cache) => {
+                return cache.match(request).then((cachedResponse) => {
+                    // 如果缓存命中，则返回缓存的响应
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
 
-                // If the resource is not in the cache, fetch it from the network
-                return fetch(event.request)
-                    .then((networkResponse) => {
-                        // Check if we received a valid response
-                        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                            return networkResponse;
+                    // 如果缓存未命中，则从网络获取
+                    return fetch(request).then((networkResponse) => {
+                        // 仅缓存有效的、非不透明的响应
+                        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+                            // 克隆响应，因为请求和响应流只能被消费一次
+                            const responseToCache = networkResponse.clone();
+                            cache.put(request, responseToCache);
                         }
-
-                        // Clone the response because it can only be consumed once
-                        const responseToCache = networkResponse.clone();
-
-                        // Cache the new response for future use
-                        caches.open(CACHE_NAME)
-                            .then((cache) => {
-                                cache.put(event.request, responseToCache);
-                            });
-
-                        // Return the network response
                         return networkResponse;
-                    })
-                    .catch(() => {
-                        // If the network request fails (e.g., offline),
-                        // we don't have a fallback in this case, so we let the request fail.
-                        // The browser will handle it. This prevents the service worker from crashing.
+                    }).catch(error => {
+                        // 当网络请求失败时 (例如离线), 返回一个标准的错误响应
+                        // 这修复了 "解析除了非响应值 ‘undefined’" 的问题
+                        console.error('[Service Worker] Fetch failed; returning offline fallback. Request:', request.url, error);
+                        // 可以返回一个自定义的离线页面或一个简单的错误响应
+                        return new Response('Network error: You are offline', {
+                            status: 408,
+                            headers: { 'Content-Type': 'text/plain' },
+                        });
                     });
+                });
             })
-    );
+        );
+    }
 });
