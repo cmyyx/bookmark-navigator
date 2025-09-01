@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadConfig = async () => {
         try {
-            const response = await fetch('config.json');
+            const response = await fetch('config.a1b2c3d4.json'); // Placeholder will be replaced by build script
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const config = await response.json();
             searchEngines = config.searchEngines;
@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const loadBookmarks = async () => {
         try {
-            const response = await fetch('bookmarks.json');
+            const response = await fetch('bookmarks.a1b2c3d4.json'); // Placeholder will be replaced by build script
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             bookmarksData = await response.json();
             allBookmarks = flattenBookmarks(bookmarksData);

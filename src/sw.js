@@ -5,66 +5,44 @@ const CORE_ASSETS = self.__CORE_ASSETS__ || [];
 const ICON_ASSETS = self.__ICON_ASSETS__ || [];
 
 self.addEventListener('install', (event) => {
-    // Create the channel once at the start of the install event.
     const channel = new BroadcastChannel('sw-messages');
 
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('[Service Worker] Pre-caching core assets...');
-                return cache.addAll(CORE_ASSETS)
-                    .then(() => {
-                        console.log('[Service Worker] Caching individual icons in chunks...');
-                        const totalIcons = ICON_ASSETS.length;
-                        let processedCount = 0;
+                const allAssetsToCache = [...CORE_ASSETS, ...ICON_ASSETS];
+                const totalAssets = allAssetsToCache.length;
+                let cachedCount = 0;
 
-                        // This function now uses the Broadcast Channel.
-                        const postProgress = (asset, status) => {
-                            processedCount++;
-                            channel.postMessage({
-                                type: 'caching-progress',
-                                payload: {
-                                    total: totalIcons,
-                                    current: processedCount,
-                                    asset: asset,
-                                    status: status
-                                }
-                            });
-                        };
-
-                        const chunkSize = 10;
-                        const chunks = [];
-                        for (let i = 0; i < totalIcons; i += chunkSize) {
-                            chunks.push(ICON_ASSETS.slice(i, i + chunkSize));
-                        }
-
-                        return chunks.reduce((promise, chunk) => {
-                            return promise.then(() => {
-                                const chunkPromises = chunk.map(asset => {
-                                    return cache.add(asset)
-                                        .then(() => postProgress(asset, 'success'))
-                                        .catch(err => {
-                                            postProgress(asset, 'failed');
-                                            console.warn(`Failed to cache icon: ${asset}`, err);
-                                        });
+                const cachePromises = allAssetsToCache.map(asset => {
+                    return cache.add(asset)
+                        .then(() => {
+                            cachedCount++;
+                            // 为了避免信息过载，我们可以选择性地发送进度
+                            if (cachedCount % 10 === 0 || cachedCount === totalAssets) {
+                                channel.postMessage({
+                                    type: 'caching-progress',
+                                    payload: { total: totalAssets, current: cachedCount, asset: asset, status: 'success' }
                                 });
-                                return Promise.all(chunkPromises);
-                            });
-                        }, Promise.resolve());
-                    });
+                            }
+                        })
+                        .catch(err => {
+                            console.warn(`Failed to cache asset: ${asset}`, err);
+                        });
+                });
+                return Promise.all(cachePromises);
             })
             .then(() => {
-                console.log('[Service Worker] All assets processed. Installation complete. Activating now.');
-                // Send the completion message and close the channel.
+                console.log('[Service Worker] All assets cached. Installation complete.');
                 channel.postMessage({ type: 'caching-complete' });
                 channel.close();
                 return self.skipWaiting();
             })
             .catch(error => {
-                console.error('[Service Worker] Core asset caching failed, installation aborted:', error);
+                console.error('[Service Worker] Caching failed:', error);
                 channel.postMessage({ type: 'caching-error', payload: { message: error.message } });
                 channel.close();
-                // Do not call skipWaiting() if core assets fail, to allow for retry.
             })
     );
 });
@@ -80,53 +58,40 @@ self.addEventListener('activate', (event) => {
                     }
                 })
             );
-        })
+        }).then(() => self.clients.claim())
     );
-    self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
 
-    // 1. 对于发往代理的API请求，直接从网络获取，不使用缓存
+    // 1. 对API请求不使用缓存
     if (url.origin === 'http://localhost:3000') {
-        // 直接执行网络请求，不经过缓存
         event.respondWith(fetch(request));
         return;
     }
-
-    // 2. 对于其他GET请求，采用 "Cache then network" 策略
-    if (request.method === 'GET') {
+    
+    // 2. 对于导航请求 (index.html)，采用网络优先策略
+    if (request.mode === 'navigate') {
         event.respondWith(
-            caches.open(CACHE_NAME).then((cache) => {
-                return cache.match(request).then((cachedResponse) => {
-                    // 如果缓存命中，则返回缓存的响应
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-
-                    // 如果缓存未命中，则从网络获取
-                    return fetch(request).then((networkResponse) => {
-                        // 仅缓存有效的、非不透明的响应
-                        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-                            // 克隆响应，因为请求和响应流只能被消费一次
-                            const responseToCache = networkResponse.clone();
-                            cache.put(request, responseToCache);
-                        }
-                        return networkResponse;
-                    }).catch(error => {
-                        // 当网络请求失败时 (例如离线), 返回一个标准的错误响应
-                        // 这修复了 "解析除了非响应值 ‘undefined’" 的问题
-                        console.error('[Service Worker] Fetch failed; returning offline fallback. Request:', request.url, error);
-                        // 可以返回一个自定义的离线页面或一个简单的错误响应
-                        return new Response('Network error: You are offline', {
-                            status: 408,
-                            headers: { 'Content-Type': 'text/plain' },
-                        });
-                    });
-                });
-            })
+            fetch(request).catch(() => caches.match('index.html'))
         );
+        return;
     }
+
+    // 3. 对所有其他资源 (带哈希的JS/CSS, 图标, 字体等)，采用缓存优先策略
+    event.respondWith(
+        caches.match(request).then((cachedResponse) => {
+            return cachedResponse || fetch(request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200) {
+                    const responseToCache = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(request, responseToCache);
+                    });
+                }
+                return networkResponse;
+            });
+        })
+    );
 });

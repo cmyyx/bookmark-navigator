@@ -1,7 +1,7 @@
 {
   "buildSettings": {
     "_comment": "高级构建设置。警告：修改这些值可能会导致构建失败或性能问题。如果不了解，请保持默认值。",
-    "concurrentRequests": 50,
+    "concurrentRequests": 30,
     "maxIconSizeBytes": 5242880,
     "allowedIconContentTypes": [
       "image/x-icon",
