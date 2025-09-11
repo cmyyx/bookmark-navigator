@@ -19,13 +19,11 @@ self.addEventListener('install', (event) => {
                     return cache.add(asset)
                         .then(() => {
                             cachedCount++;
-                            // 为了避免信息过载，我们可以选择性地发送进度
-                            if (cachedCount % 10 === 0 || cachedCount === totalAssets) {
-                                channel.postMessage({
-                                    type: 'caching-progress',
-                                    payload: { total: totalAssets, current: cachedCount, asset: asset, status: 'success' }
-                                });
-                            }
+                            // 立即发送进度更新
+                            channel.postMessage({
+                                type: 'caching-progress',
+                                payload: { total: totalAssets, current: cachedCount, asset: asset, status: 'success' }
+                            });
                         })
                         .catch(err => {
                             console.warn(`Failed to cache asset: ${asset}`, err);
