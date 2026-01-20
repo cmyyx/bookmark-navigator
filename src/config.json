@@ -17,7 +17,7 @@
     "fallback": "assets/background.webp",
     "api": {
       "enabled": true,
-      "url": "https://img.cmtyx.top/random?dir=横屏&type=img"
+      "url": "https://img.canmoe.com/image?img=ua"
     }
   },
   "searchEngines": {
